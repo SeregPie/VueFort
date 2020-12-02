@@ -150,6 +150,18 @@ console.log(data.tags); // => ['fluffy', 'bright', 'angry']
 console.log(data.updated); // => undefined
 ```
 
+### effect scope
+
+When the instance is created during a component's `setup` function or lifecycle hooks, the instance is linked to the component's lifecycle and will be automatically destroyed when the component is unmounted.
+
+In other cases, the instance can be explicitly destroyed by calling the `$destroy` function.
+
+```javascript
+instance.$destroy();
+
+console.log(instance.$isDestroyed); // true
+```
+
 ## API
 
 ### defineModel

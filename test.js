@@ -159,4 +159,38 @@ let assert = require('assert/strict');
 		assert.equal(instance.count, 0);
 		assert.equal(instance.countDouble, 0);
 	}
+	{
+		let t = 0;
+		let model = defineModel({
+			getters: {
+				countDouble() {
+					return this.count * 2;
+				},
+			},
+			watch: {
+				countDouble: {
+					handler() {
+						t++;
+					},
+					flush: 'sync',
+				},
+			},
+		});
+		let data = reactive({count: 1});
+		let instance = model(data);
+		watch(
+			() => instance.countDouble,
+			() => {
+				t++;
+			},
+			{flush: 'sync'},
+		);
+		assert.equal(t, 0);
+		data.count++;
+		assert.equal(t, 2);
+		instance.$destroy();
+		assert.equal(instance.$isDestroyed, true);
+		data.count++;
+		assert.equal(t, 2);
+	}
 });
