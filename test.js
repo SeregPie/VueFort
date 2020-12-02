@@ -215,7 +215,7 @@ let assert = require('assert/strict');
 		assert.equal(root.$isDestroyed, true);
 		assert.equal(root.items.every(item => item.$isDestroyed), true);
 	}
-	/*{
+	{
 		let itemModel = defineModel();
 		let rootModel = defineModel({
 			state() {
@@ -241,5 +241,5 @@ let assert = require('assert/strict');
 		root.$destroy();
 		assert.equal(root.$isDestroyed, true);
 		assert.equal(root.items.every(item => item.$isDestroyed), true);
-	}*/
+	}
 });

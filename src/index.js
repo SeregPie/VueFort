@@ -75,10 +75,40 @@ function isPrivateProperty(key) {
 	return key.startsWith('_');
 }
 
-function createInstance(model, data) {
+function createInstance(model, data, {
+	bind,
+} = {}) {
 	let that = {};
-	let scope = effectScope();
-	extendScope(scope, onStop => {
+	let dataRefs = toRefs(data);
+	let isDestroyed = false;
+	let scopeFunc = (onStop => {
+		onStop(() => {
+			isDestroyed = true;
+		});
+	});
+	let scope = (bind
+		? extendScope(bind, scopeFunc)
+		: effectScope(scopeFunc)
+	);
+	Object.defineProperties(that, {
+		$model: {
+			value: model,
+		},
+		$effectScope: {
+			value: scope,
+		},
+		$destroy: {
+			value() {
+				stop(scope);
+			},
+		},
+		$isDestroyed: {
+			get() {
+				return isDestroyed;
+			},
+		},
+	});
+	extendScope(scope, () => {
 		let descriptors = {};
 		let {
 			options: {
@@ -88,7 +118,6 @@ function createInstance(model, data) {
 				methods = {},
 			} = {},
 		} = model;
-		let dataRefs = toRefs(data);
 		(Object
 			.entries({
 				...dataRefs,
@@ -132,28 +161,6 @@ function createInstance(model, data) {
 				});
 			})
 		);
-		let isDestroyed = false;
-		onStop(() => {
-			isDestroyed = true;
-		});
-		Object.assign(descriptors, {
-			$model: {
-				value: model,
-			},
-			$effectScope: {
-				value: scope,
-			},
-			$destroy: {
-				value() {
-					stop(scope);
-				},
-			},
-			$isDestroyed: {
-				get() {
-					return isDestroyed;
-				},
-			},
-		});
 		Object.defineProperties(that, descriptors);
 		(Object
 			.entries(watchProperties)

@@ -62,13 +62,16 @@ function effectScope(fn) {
 	let scope = {};
 	let effects = new Set();
 	let extend = (fn => {
-		let previousScope = currentScope;
-		currentScope = scope;
-		try {
-			return fn(onStop);
-		} finally {
-			currentScope = previousScope;
+		if (fn) {
+			let previousScope = currentScope;
+			currentScope = scope;
+			try {
+				Object.assign(scope, fn(onStop));
+			} finally {
+				currentScope = previousScope;
+			}
 		}
+		return scope;
 	});
 	mapScopeToOptions.set(scope, {
 		effects,
@@ -88,9 +91,7 @@ function effectScope(fn) {
 			stop(scope);
 		});
 	}
-	if (fn) {
-		Object.assign(scope, extend(fn));
-	}
+	extend(fn);
 	return scope;
 }
 
