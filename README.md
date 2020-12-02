@@ -152,10 +152,9 @@ console.log(data.updated); // => undefined
 
 ### effect scope
 
-The instance is bound to the current scope.
-When watchEffect is called during a component's setup() function or lifecycle hooks, the watcher is linked to the component's lifecycle and will be automatically stopped when the component is unmounted.
+When the instance is created during a component's `setup` function or lifecycle hooks, the instance is linked to the component's lifecycle and will be automatically destroyed when the component is unmounted.
 
-Destroy the instance by explicitly calling the `$destroy` function.
+In other cases, the instance can be explicitly destroyed by calling the `$destroy` function.
 
 ```javascript
 instance.$destroy();
