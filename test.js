@@ -164,4 +164,55 @@ let assert = require('assert/strict');
 		assert.equal(instance.count, 0);
 		assert.equal(instance.countDouble, 0);
 	}
+	{
+		let model = defineModel({
+			state() {
+				return {
+					countTriple: undefined,
+				};
+			},
+			getters: {
+				countDouble() {
+					return this.count * 2;
+				},
+			},
+			watch: {
+				countDouble: {
+					handler(value) {
+						if (value > 8) {
+							this.count = 0;
+						}
+					},
+					immediate: true,
+					flush: 'sync',
+				},
+			},
+			methods: {
+				inc() {
+					this.count++;
+				},
+			},
+		});
+		let data = reactive({count: 1});
+		let instance = model(data);
+		assert.equal(data.count, 1);
+		assert.equal(instance.count, 1);
+		assert.equal(instance.countDouble, 2);
+		instance.inc();
+		assert.equal(data.count, 2);
+		assert.equal(instance.count, 2);
+		assert.equal(instance.countDouble, 4);
+		data.count = 3;
+		assert.equal(data.count, 3);
+		assert.equal(instance.count, 3);
+		assert.equal(instance.countDouble, 6);
+		instance.inc();
+		assert.equal(data.count, 4);
+		assert.equal(instance.count, 4);
+		assert.equal(instance.countDouble, 8);
+		instance.inc();
+		assert.equal(data.count, 0);
+		assert.equal(instance.count, 0);
+		assert.equal(instance.countDouble, 0);
+	}
 });

@@ -1,7 +1,9 @@
 import {
 	computed,
+	effectScope,
+	stop,
 	watch,
-} from 'vue-demi';
+} from './vue';
 import {
 	isArray,
 	isFunction,
@@ -64,72 +66,88 @@ function isPrivateProperty(key) {
 
 function createInstance(model, data) {
 	let that = {};
-	let descriptors = {};
-	let {
-		options: {
-			state = NOOP,
-			getters = {},
-			watch: watchProperties = {},
-			methods = {},
-		} = {},
-	} = model;
-	let dataRefs = toRefs(data);
-	(Object
-		.entries({
-			...dataRefs,
-			...toRefs(state({...dataRefs})),
-		})
-		.forEach(([key, ref]) => {
-			descriptors[key] = {
+	let scope = effectScope(onStop => {
+		let descriptors = {};
+		let {
+			options: {
+				state = NOOP,
+				getters = {},
+				watch: watchProperties = {},
+				methods = {},
+			} = {},
+		} = model;
+		let dataRefs = toRefs(data);
+		(Object
+			.entries({
+				...dataRefs,
+				...toRefs(state({...dataRefs})),
+			})
+			.forEach(([key, ref]) => {
+				descriptors[key] = {
+					get() {
+						return ref.value;
+					},
+					set(value) {
+						ref.value = value;
+					},
+				};
+			})
+		);
+		(Object
+			.entries(getters)
+			.forEach(([key, getter]) => {
+				let ref = computed(getter.bind(that));
+				descriptors[key] = {
+					get() {
+						return ref.value;
+					},
+				};
+			})
+		);
+		(Object
+			.entries(methods)
+			.forEach(([key, method]) => {
+				descriptors[key] = {
+					value: method.bind(that),
+				};
+			})
+		);
+		(Object
+			.entries(descriptors)
+			.forEach(([key, descriptor]) => {
+				Object.assign(descriptor, {
+					enumerable: !isPrivateProperty(key),
+				});
+			})
+		);
+		let isDestroyed = false;
+		onStop(() => {
+			isDestroyed = true;
+		});
+		Object.assign(descriptors, {
+			$model: {
+				value: model,
+			},
+			$destroy: {
+				value() {
+					stop(scope);
+				},
+			},
+			$isDestroyed: {
 				get() {
-					return ref.value;
+					return isDestroyed;
 				},
-				set(value) {
-					ref.value = value;
-				},
-			};
-		})
-	);
-	(Object
-		.entries(getters)
-		.forEach(([key, getter]) => {
-			let ref = computed(getter.bind(that));
-			descriptors[key] = {
-				get() {
-					return ref.value;
-				},
-			};
-		})
-	);
-	(Object
-		.entries(methods)
-		.forEach(([key, method]) => {
-			descriptors[key] = {
-				value: method.bind(that),
-			};
-		})
-	);
-	(Object
-		.entries(descriptors)
-		.forEach(([key, descriptor]) => {
-			Object.assign(descriptor, {
-				enumerable: !isPrivateProperty(key),
-			});
-		})
-	);
-	Object.assign(descriptors, {
-		$model: {
-			value: model,
-		},
+			},
+		});
+		Object.defineProperties(that, descriptors);
+		(Object
+			.entries(watchProperties)
+			.forEach(([key, value]) => {
+				let getter = createPathGetter(that, key);
+				createInstanceWatcher(that, getter, value);
+			})
+		);
 	});
-	Object.defineProperties(that, descriptors);
-	(Object
-		.entries(watchProperties)
-		.forEach(([key, value]) => {
-			let getter = createPathGetter(that, key);
-			createInstanceWatcher(that, getter, value);
-		})
-	);
 	return that;
 }
 
