@@ -1,6 +1,7 @@
 import {
 	computed,
 	effectScope,
+	extendScope,
 	stop,
 	watch,
 } from './vue';
@@ -29,6 +30,16 @@ function createPathGetter(value, key) {
 	);
 }
 
+function aaaa(fn, that) {
+	return function(...args) {
+		let result;
+		extendScope(that, () => {
+			result = fn.apply(that, args);
+		});
+		return result;
+	};
+}
+
 function createInstanceWatcher(that, getter, v) {
 	if (isArray(v)) {
 		v.forEach(v => {
@@ -41,7 +52,7 @@ function createInstanceWatcher(that, getter, v) {
 			callback = that[v];
 		} else
 		if (isFunction(v)) {
-			callback = v.bind(that);
+			callback = aaaa(v, that);
 		} else
 		if (isObject(v)) {
 			({handler: v, ...options} = v);
@@ -49,7 +60,7 @@ function createInstanceWatcher(that, getter, v) {
 				callback = that[v];
 			} else
 			if (isFunction(v)) {
-				callback = v.bind(that);
+				callback = aaaa(v, that);
 			}
 		}
 		watch(
@@ -66,7 +77,8 @@ function isPrivateProperty(key) {
 
 function createInstance(model, data) {
 	let that = {};
-	let scope = effectScope(onStop => {
+	let scope = effectScope();
+	extendScope(scope, onStop => {
 		let descriptors = {};
 		let {
 			options: {
@@ -96,7 +108,7 @@ function createInstance(model, data) {
 		(Object
 			.entries(getters)
 			.forEach(([key, getter]) => {
-				let ref = computed(getter.bind(that));
+				let ref = computed(aaaa(getter, that));
 				descriptors[key] = {
 					get() {
 						return ref.value;
@@ -108,7 +120,7 @@ function createInstance(model, data) {
 			.entries(methods)
 			.forEach(([key, method]) => {
 				descriptors[key] = {
-					value: method.bind(that),
+					value: aaaa(method, that),
 				};
 			})
 		);
@@ -127,6 +139,9 @@ function createInstance(model, data) {
 		Object.assign(descriptors, {
 			$model: {
 				value: model,
+			},
+			$effectScope: {
+				value: scope,
 			},
 			$destroy: {
 				value() {

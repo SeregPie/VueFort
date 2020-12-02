@@ -1,7 +1,7 @@
 let assert = require('assert/strict');
 
-(f => {
-	let run = function(modules) {
+(async f => {
+	let run = async function(modules) {
 		modules = Object.entries(modules).reduce((result, [id, path]) => {
 			path = require.resolve(path);
 			delete require.cache[path];
@@ -11,19 +11,19 @@ let assert = require('assert/strict');
 		module.constructor.prototype.require = function(id) {
 			return this.constructor._load(modules[id] ?? id, this);
 		};
-		f();
+		await f();
 	};
-	run({
+	await run({
 		'vue': 'vue-v3',
 		'vue-demi': 'vue-demi/lib/v3/index.cjs.js',
 		'vue-fort': './',
 	});
-	run({
+	await run({
 		'vue': 'vue-v2',
 		'vue-demi': 'vue-demi/lib/v2/index.cjs.js',
 		'vue-fort': './',
 	});
-})(() => {
+})(async () => {
 	let {
 		isVue2,
 		isVue3,
@@ -193,4 +193,53 @@ let assert = require('assert/strict');
 		data.count++;
 		assert.equal(t, 2);
 	}
+	{
+		let itemModel = defineModel();
+		let rootModel = defineModel({
+			state() {
+				return {items: []};
+			},
+			methods: {
+				addItem() {
+					let {items} = this;
+					let item = itemModel();
+					items.push(item);
+				},
+			},
+		});
+		let root = rootModel();
+		root.addItem();
+		root.addItem();
+		root.addItem();
+		root.$destroy();
+		assert.equal(root.$isDestroyed, true);
+		assert.equal(root.items.every(item => item.$isDestroyed), true);
+	}
+	/*{
+		let itemModel = defineModel();
+		let rootModel = defineModel({
+			state() {
+				return {items: []};
+			},
+			methods: {
+				async addItem() {
+					await new Promise(resolve => {
+						setTimeout(resolve, 1);
+					});
+					let {items} = this;
+					let item = itemModel({}, {
+						bind: this,
+					});
+					items.push(item);
+				},
+			},
+		});
+		let root = rootModel();
+		await root.addItem();
+		await root.addItem();
+		await root.addItem();
+		root.$destroy();
+		assert.equal(root.$isDestroyed, true);
+		assert.equal(root.items.every(item => item.$isDestroyed), true);
+	}*/
 });

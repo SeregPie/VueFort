@@ -162,6 +162,83 @@ instance.$destroy();
 console.log(instance.$isDestroyed); // true
 ```
 
+### nested instances
+
+The instances can be created and used within another instances. The instances are tied to the scope of the parent instance in which they were created.
+
+```javascript
+let itemModel = defineModel();
+
+let rootModel = defineModel({
+  state() {
+    return {items: []};
+  },
+  methods: {
+    addItem(label, value) {
+      let {items} = this;
+      let item = itemModel({
+        label,
+        value,
+      });
+      items.push(item);
+    },
+    delItem(index) {
+      let {items} = this;
+      let [item] = items.splice(index, 1);
+      item.$destroy();
+    },
+  },
+});
+
+let root = rootModel();
+
+root.addItem('a', 23);
+root.addItem('b', 25);
+root.addItem('c', 27);
+
+console.log(root.items.length); // => 3
+
+root.delItem(1);
+
+console.log(root.items.length); // => 2
+```
+
+Destroying a parent instance will automatically destroy all its child instances.
+
+```javascript
+root.$destroy();
+
+console.log(root.$isDestroyed); // true
+console.log(root.items.every(item => item.$isDestroyed)); // true
+```
+
+### nested instances ???
+
+...
+
+```javascript
+let itemModel = defineModel();
+
+let rootModel = defineModel({
+  state() {
+    return {items: []};
+  },
+  methods: {
+    async addItem(label) {
+      let value = await addItem(label);
+      let {items} = this;
+      let item = itemModel({
+        label,
+        value,
+      }, {
+        bind: this,
+      });
+      items.push(item);
+    },
+  },
+});
+```
+
 ## API
 
 ### defineModel
