@@ -115,11 +115,6 @@ let assert = require('assert/strict');
 	}
 	{
 		let model = defineModel({
-			state() {
-				return {
-					countTriple: undefined,
-				};
-			},
 			getters: {
 				countDouble() {
 					return this.count * 2;
