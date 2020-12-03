@@ -30,7 +30,7 @@ function createPathGetter(value, key) {
 	);
 }
 
-function aaaa(fn, that) {
+function createInstanceMethod(that, fn) {
 	return function(...args) {
 		let result;
 		extendScope(that, () => {
@@ -52,7 +52,7 @@ function createInstanceWatcher(that, getter, v) {
 			callback = that[v];
 		} else
 		if (isFunction(v)) {
-			callback = aaaa(v, that);
+			callback = createInstanceMethod(that, v);
 		} else
 		if (isObject(v)) {
 			({handler: v, ...options} = v);
@@ -60,7 +60,7 @@ function createInstanceWatcher(that, getter, v) {
 				callback = that[v];
 			} else
 			if (isFunction(v)) {
-				callback = aaaa(v, that);
+				callback = createInstanceMethod(that, v);
 			}
 		}
 		watch(
@@ -137,7 +137,7 @@ function createInstance(model, data, {
 		(Object
 			.entries(getters)
 			.forEach(([key, getter]) => {
-				let ref = computed(aaaa(getter, that));
+				let ref = computed(createInstanceMethod(that, getter));
 				descriptors[key] = {
 					get() {
 						return ref.value;
@@ -149,7 +149,7 @@ function createInstance(model, data, {
 			.entries(methods)
 			.forEach(([key, method]) => {
 				descriptors[key] = {
-					value: aaaa(method, that),
+					value: createInstanceMethod(that, method),
 				};
 			})
 		);
