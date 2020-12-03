@@ -1,6 +1,7 @@
 import {
 	computed,
 	effectScope,
+	extendScope,
 	stop,
 	watch,
 } from './vue';
@@ -29,10 +30,24 @@ function createPathGetter(value, key) {
 	);
 }
 
-function createInstanceWatcher(that, getter, v) {
+function isPrivateProperty(key) {
+	return key.startsWith('_');
+}
+
+function createInstanceMethod(that, v) {
+	return function(...args) {
+		let result;
+		extendScope(that, () => {
+			result = v.apply(that, args);
+		});
+		return result;
+	};
+}
+
+function createInstanceWatcher(that, source, v) {
 	if (isArray(v)) {
 		v.forEach(v => {
-			createInstanceWatcher(that, getter, v);
+			createInstanceWatcher(that, source, v);
 		});
 	} else {
 		let callback;
@@ -41,7 +56,7 @@ function createInstanceWatcher(that, getter, v) {
 			callback = that[v];
 		} else
 		if (isFunction(v)) {
-			callback = v.bind(that);
+			callback = createInstanceMethod(that, v);
 		} else
 		if (isObject(v)) {
 			({handler: v, ...options} = v);
@@ -49,24 +64,51 @@ function createInstanceWatcher(that, getter, v) {
 				callback = that[v];
 			} else
 			if (isFunction(v)) {
-				callback = v.bind(that);
+				callback = createInstanceMethod(that, v);
 			}
 		}
 		watch(
-			getter,
+			source,
 			callback,
 			options,
 		);
 	}
 }
 
-function isPrivateProperty(key) {
-	return key.startsWith('_');
-}
-
-function createInstance(model, data) {
+function createInstance(model, data, {
+	bind,
+} = {}) {
 	let that = {};
-	let scope = effectScope(onStop => {
+	let dataRefs = toRefs(data);
+	let isDestroyed = false;
+	let scopeFunc = (onStop => {
+		onStop(() => {
+			isDestroyed = true;
+		});
+	});
+	let scope = (bind
+		? extendScope(bind, scopeFunc)
+		: effectScope(scopeFunc)
+	);
+	Object.defineProperties(that, {
+		$model: {
+			value: model,
+		},
+		$effectScope: {
+			value: scope,
+		},
+		$destroy: {
+			value() {
+				stop(scope);
+			},
+		},
+		$isDestroyed: {
+			get() {
+				return isDestroyed;
+			},
+		},
+	});
+	extendScope(scope, () => {
 		let descriptors = {};
 		let {
 			options: {
@@ -76,14 +118,13 @@ function createInstance(model, data) {
 				methods = {},
 			} = {},
 		} = model;
-		let dataRefs = toRefs(data);
 		(Object
 			.entries({
 				...dataRefs,
 				...toRefs(state({...dataRefs})),
 			})
-			.forEach(([key, ref]) => {
-				descriptors[key] = {
+			.forEach(([k, ref]) => {
+				descriptors[k] = {
 					get() {
 						return ref.value;
 					},
@@ -95,9 +136,9 @@ function createInstance(model, data) {
 		);
 		(Object
 			.entries(getters)
-			.forEach(([key, getter]) => {
-				let ref = computed(getter.bind(that));
-				descriptors[key] = {
+			.forEach(([k, v]) => {
+				let ref = computed(createInstanceMethod(that, v));
+				descriptors[k] = {
 					get() {
 						return ref.value;
 					},
@@ -106,9 +147,9 @@ function createInstance(model, data) {
 		);
 		(Object
 			.entries(methods)
-			.forEach(([key, method]) => {
-				descriptors[key] = {
-					value: method.bind(that),
+			.forEach(([k, v]) => {
+				descriptors[k] = {
+					value: createInstanceMethod(that, v),
 				};
 			})
 		);
@@ -120,31 +161,12 @@ function createInstance(model, data) {
 				});
 			})
 		);
-		let isDestroyed = false;
-		onStop(() => {
-			isDestroyed = true;
-		});
-		Object.assign(descriptors, {
-			$model: {
-				value: model,
-			},
-			$destroy: {
-				value() {
-					stop(scope);
-				},
-			},
-			$isDestroyed: {
-				get() {
-					return isDestroyed;
-				},
-			},
-		});
 		Object.defineProperties(that, descriptors);
 		(Object
 			.entries(watchProperties)
-			.forEach(([key, value]) => {
-				let getter = createPathGetter(that, key);
-				createInstanceWatcher(that, getter, value);
+			.forEach(([k, v]) => {
+				let getter = createPathGetter(that, k);
+				createInstanceWatcher(that, getter, v);
 			})
 		);
 	});

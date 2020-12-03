@@ -11,7 +11,11 @@ import {
 } from '@vue/shared';
 
 function isEffect(value) {
-	return !!(value?.$isEffect);
+	return !!(value && value.$isEffect === true);
+}
+
+function hasEffect(value) {
+	return !!(value && value.$effect && isEffect(value.$effect));
 }
 
 let currentScope;
@@ -29,14 +33,24 @@ function isEffectScope(value) {
 	return mapScopeToOptions.has(value);
 }
 
+function hasEffectScope(value) {
+	return !!(value && value.$effectScope && isEffectScope(value.$effectScope));
+}
+
 function stop(value) {
 	if (isEffect(value)) {
 		let {stop} = value;
-		stop();
-	} else
+		return stop();
+	}
 	if (isEffectScope(value)) {
 		let {stop} = mapScopeToOptions.get(value);
-		stop();
+		return stop();
+	}
+	if (hasEffect(value)) {
+		return stop(value.$effect);
+	}
+	if (hasEffectScope(value)) {
+		return stop(value.$effectScope);
 	}
 }
 
@@ -47,8 +61,21 @@ function effectScope(fn) {
 	});
 	let scope = {};
 	let effects = new Set();
+	let extend = (fn => {
+		if (fn) {
+			let previousScope = currentScope;
+			currentScope = scope;
+			try {
+				Object.assign(scope, fn(onStop));
+			} finally {
+				currentScope = previousScope;
+			}
+		}
+		return scope;
+	});
 	mapScopeToOptions.set(scope, {
 		effects,
+		extend,
 		stop() {
 			effects.forEach(effect => {
 				stop(effect);
@@ -59,21 +86,23 @@ function effectScope(fn) {
 		},
 	});
 	recordEffect(scope);
-	{
-		let previousScope = currentScope;
-		currentScope = scope;
-		try {
-			Object.assign(scope, fn(onStop));
-		} finally {
-			currentScope = previousScope;
-		}
-	}
 	if (getCurrentInstance()) {
 		onUnmounted(() => {
 			stop(scope);
 		});
 	}
+	extend(fn);
 	return scope;
+}
+
+function extendScope(value, fn) {
+	if (isEffectScope(value)) {
+		let {extend} = mapScopeToOptions.get(value);
+		return extend(fn);
+	}
+	if (hasEffectScope(value)) {
+		return extendScope(value.$effectScope, fn);
+	}
 }
 
 function _computed(arg) {
@@ -131,5 +160,6 @@ export {
 	_computed as computed,
 	_watch as watch,
 	effectScope,
+	extendScope,
 	stop,
 };

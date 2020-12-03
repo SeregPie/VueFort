@@ -152,7 +152,7 @@ console.log(data.updated); // => undefined
 
 ### effect scope
 
-When the instance is created during a component's `setup` function or lifecycle hooks, the instance is linked to the component's lifecycle and will be automatically destroyed when the component is unmounted.
+When the instance is created during a component's `setup` function or lifecycle hooks, the instance is bound to the component's lifecycle and will be automatically destroyed when the component is unmounted.
 
 In other cases, the instance can be explicitly destroyed by calling the `$destroy` function.
 
@@ -160,6 +160,83 @@ In other cases, the instance can be explicitly destroyed by calling the `$destro
 instance.$destroy();
 
 console.log(instance.$isDestroyed); // true
+```
+
+### nested instances
+
+An instance can be created and used within another instance. The instance is bound to the scope of the parent instance in which it was created.
+
+```javascript
+let itemModel = defineModel();
+
+let rootModel = defineModel({
+  state() {
+    return {items: []};
+  },
+  methods: {
+    addItem(label, value) {
+      let {items} = this;
+      let item = itemModel({
+        label,
+        value,
+      });
+      items.push(item);
+    },
+    delItem(index) {
+      let {items} = this;
+      let [item] = items.splice(index, 1);
+      item.$destroy();
+    },
+  },
+});
+
+let root = rootModel();
+
+root.addItem('a', 23);
+root.addItem('b', 25);
+root.addItem('c', 27);
+
+console.log(root.items.length); // => 3
+
+root.delItem(1);
+
+console.log(root.items.length); // => 2
+```
+
+Destroying a parent instance will automatically destroy all its child instances.
+
+```javascript
+root.$destroy();
+
+console.log(root.$isDestroyed); // true
+console.log(root.items.every(item => item.$isDestroyed)); // true
+```
+
+### async functions and nested instances
+
+When an instance is created within an async function, the scope can be explicitly passed via the `bind` option.
+
+```javascript
+let itemModel = defineModel();
+
+let rootModel = defineModel({
+  state() {
+    return {items: []};
+  },
+  methods: {
+    async addItem(label) {
+      let value = await API.addItem(label);
+      let {items} = this;
+      let item = itemModel({
+        label,
+        value,
+      }, {
+        bind: this,
+      });
+      items.push(item);
+    },
+  },
+});
 ```
 
 ## API
