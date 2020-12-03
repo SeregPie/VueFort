@@ -204,16 +204,26 @@ let assert = require('assert/strict');
 					let {items} = this;
 					let item = itemModel();
 					items.push(item);
+					return item;
 				},
 			},
 		});
-		let root = rootModel();
-		root.addItem();
-		root.addItem();
-		root.addItem();
-		root.$destroy();
-		assert.equal(root.$isDestroyed, true);
-		assert.equal(root.items.every(item => item.$isDestroyed), true);
+		{
+			let root = rootModel();
+			root.addItem();
+			root.addItem();
+			root.addItem();
+			root.$destroy();
+			assert.equal(root.$isDestroyed, true);
+			assert.equal(root.items.every(item => item.$isDestroyed), true);
+		}
+		{
+			let root = rootModel();
+			let item = root.addItem();
+			item.$destroy();
+			assert.equal(item.$isDestroyed, true);
+			assert.equal(root.$isDestroyed, false);
+		}
 	}
 	{
 		let itemModel = defineModel();
@@ -231,15 +241,25 @@ let assert = require('assert/strict');
 						bind: this,
 					});
 					items.push(item);
+					return item;
 				},
 			},
 		});
-		let root = rootModel();
-		await root.addItem();
-		await root.addItem();
-		await root.addItem();
-		root.$destroy();
-		assert.equal(root.$isDestroyed, true);
-		assert.equal(root.items.every(item => item.$isDestroyed), true);
+		{
+			let root = rootModel();
+			await root.addItem();
+			await root.addItem();
+			await root.addItem();
+			root.$destroy();
+			assert.equal(root.$isDestroyed, true);
+			assert.equal(root.items.every(item => item.$isDestroyed), true);
+		}
+		{
+			let root = rootModel();
+			let item = await root.addItem();
+			item.$destroy();
+			assert.equal(item.$isDestroyed, true);
+			assert.equal(root.$isDestroyed, false);
+		}
 	}
 });

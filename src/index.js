@@ -76,7 +76,7 @@ function createInstanceWatcher(that, source, v) {
 }
 
 function createInstance(model, data, {
-	bind,
+	bind = true,
 } = {}) {
 	let that = {};
 	let dataRefs = toRefs(data);
@@ -86,10 +86,14 @@ function createInstance(model, data, {
 			isDestroyed = true;
 		});
 	});
-	let scope = (bind
-		? extendScope(bind, scopeFunc)
-		: effectScope(scopeFunc)
-	);
+	let scope;
+	if (bind === true) {
+		scope = effectScope(scopeFunc);
+	} else {
+		extendScope(bind, () => {
+			scope = effectScope(scopeFunc);
+		});
+	}
 	Object.defineProperties(that, {
 		$model: {
 			value: model,
