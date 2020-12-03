@@ -1,4 +1,8 @@
 import {
+	reactive,
+	shallowRef,
+} from 'vue-demi';
+import {
 	computed,
 	effectScope,
 	extendScope,
@@ -75,31 +79,64 @@ function createInstanceWatcher(that, source, v) {
 	}
 }
 
+function createInstanceEffectScope(v, fn) {
+	if (v === true) {
+		return effectScope(fn);
+	}
+	let result;
+	extendScope(v, () => {
+		result = effectScope(fn);
+	});
+	return result;
+}
+
 function createInstance(model, data, {
 	bind = true,
 } = {}) {
 	let that = {};
 	let dataRefs = toRefs(data);
+	let dataKeys = Object.keys(dataRefs);
+	data = shallowRef(reactive(dataRefs));
 	let isDestroyed = false;
-	let scopeFunc = (onStop => {
+	let scope = createInstanceEffectScope(bind, onStop => {
 		onStop(() => {
 			isDestroyed = true;
 		});
+		{
+			dataRefs = {};
+			dataKeys.forEach(k => {
+				dataRefs[k] = computed({
+					get() {
+						return data.value[k];
+					},
+					set(value) {
+						data.value[k] = value;
+					},
+				});
+			});
+		}
 	});
-	let scope;
-	if (bind === true) {
-		scope = effectScope(scopeFunc);
-	} else {
-		extendScope(bind, () => {
-			scope = effectScope(scopeFunc);
-		});
-	}
 	Object.defineProperties(that, {
 		$model: {
 			value: model,
 		},
 		$effectScope: {
 			value: scope,
+		},
+		$data: {
+			get() {
+				return data.value;
+			},
+			set(value) {
+				data.value = reactive(toRefs(value));
+			},
+		},
+		$update: {
+			value(data) {
+				Object.assign(that, {
+					$data: data,
+				});
+			},
 		},
 		$destroy: {
 			value() {
