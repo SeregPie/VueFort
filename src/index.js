@@ -215,20 +215,34 @@ function createInstance(model, data, {
 }
 
 function defineModel(options) {
+	options = shallowRef(options);
 	let model = function(...args) {
 		return createInstance(model, ...args);
 	};
 	Object.defineProperties(model, {
 		options: {
 			get() {
-				return options;
+				return options.value;
+			},
+			set(value) {
+				options.value = value;
+			},
+		},
+		update: {
+			value(options) {
+				Object.assign(model, {options});
 			},
 		},
 	});
 	return model;
 }
 
+function c(...args) {
+	return createInstance(...args);
+}
+
 export {
+	c,
 	defineModel,
 	toRefs,
 };
