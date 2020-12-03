@@ -30,20 +30,24 @@ function createPathGetter(value, key) {
 	);
 }
 
-function createInstanceMethod(that, fn) {
+function isPrivateProperty(key) {
+	return key.startsWith('_');
+}
+
+function createInstanceMethod(that, v) {
 	return function(...args) {
 		let result;
 		extendScope(that, () => {
-			result = fn.apply(that, args);
+			result = v.apply(that, args);
 		});
 		return result;
 	};
 }
 
-function createInstanceWatcher(that, getter, v) {
+function createInstanceWatcher(that, source, v) {
 	if (isArray(v)) {
 		v.forEach(v => {
-			createInstanceWatcher(that, getter, v);
+			createInstanceWatcher(that, source, v);
 		});
 	} else {
 		let callback;
@@ -64,15 +68,11 @@ function createInstanceWatcher(that, getter, v) {
 			}
 		}
 		watch(
-			getter,
+			source,
 			callback,
 			options,
 		);
 	}
-}
-
-function isPrivateProperty(key) {
-	return key.startsWith('_');
 }
 
 function createInstance(model, data, {
@@ -123,8 +123,8 @@ function createInstance(model, data, {
 				...dataRefs,
 				...toRefs(state({...dataRefs})),
 			})
-			.forEach(([key, ref]) => {
-				descriptors[key] = {
+			.forEach(([k, ref]) => {
+				descriptors[k] = {
 					get() {
 						return ref.value;
 					},
@@ -136,9 +136,9 @@ function createInstance(model, data, {
 		);
 		(Object
 			.entries(getters)
-			.forEach(([key, getter]) => {
-				let ref = computed(createInstanceMethod(that, getter));
-				descriptors[key] = {
+			.forEach(([k, v]) => {
+				let ref = computed(createInstanceMethod(that, v));
+				descriptors[k] = {
 					get() {
 						return ref.value;
 					},
@@ -147,9 +147,9 @@ function createInstance(model, data, {
 		);
 		(Object
 			.entries(methods)
-			.forEach(([key, method]) => {
-				descriptors[key] = {
-					value: createInstanceMethod(that, method),
+			.forEach(([k, v]) => {
+				descriptors[k] = {
+					value: createInstanceMethod(that, v),
 				};
 			})
 		);
@@ -164,9 +164,9 @@ function createInstance(model, data, {
 		Object.defineProperties(that, descriptors);
 		(Object
 			.entries(watchProperties)
-			.forEach(([key, value]) => {
-				let getter = createPathGetter(that, key);
-				createInstanceWatcher(that, getter, value);
+			.forEach(([k, v]) => {
+				let getter = createPathGetter(that, k);
+				createInstanceWatcher(that, getter, v);
 			})
 		);
 	});
