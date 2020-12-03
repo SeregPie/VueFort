@@ -1,7 +1,7 @@
 import {
-	customRef,
 	getCurrentInstance,
 	onUnmounted,
+	shallowRef,
 	watch,
 } from 'vue-demi';
 import {
@@ -9,6 +9,8 @@ import {
 	isFunction,
 	NOOP,
 } from '@vue/shared';
+
+import createRef from './createRef';
 
 function isEffect(value) {
 	return !!(value && value.$isEffect === true);
@@ -119,30 +121,26 @@ function _computed(arg) {
 		stop: NOOP,
 	};
 	recordEffect(effect);
-	return customRef((track, trigger) => {
-		let ref;
-		return {
-			get() {
-				if (!ref) {
-					effect.stop = watch(get, value => {
-						if (!ref) {
-							ref = {value};
-						} else {
-							if (hasChanged(ref.value, value)) {
-								ref.value = value;
-								trigger();
-							}
+	let ref;
+	return createRef({
+		get() {
+			if (!ref) {
+				effect.stop = watch(get, value => {
+					if (!ref) {
+						ref = shallowRef(value);
+					} else {
+						if (hasChanged(ref.value, value)) {
+							ref.value = value;
 						}
-					}, {
-						flush: 'sync',
-						immediate: true,
-					});
-				}
-				track();
-				return ref.value;
-			},
-			set,
-		};
+					}
+				}, {
+					flush: 'sync',
+					immediate: true,
+				});
+			}
+			return ref.value;
+		},
+		set,
 	});
 }
 
