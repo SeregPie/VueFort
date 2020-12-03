@@ -239,6 +239,28 @@ let rootModel = defineModel({
 });
 ```
 
+### dynamic data source
+
+Replace the underlying data by calling the `$update` function.
+
+```javascript
+let model = defineModel({
+  getters: {
+    countDouble() {
+      return this.count * 2;
+    },
+  },
+});
+
+let instance = model({count: 1});
+
+console.log(instance.countDouble); // 2
+
+instance.$update({count: 2});
+
+console.log(instance.countDouble); // 4
+```
+
 ## API
 
 ### defineModel

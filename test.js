@@ -194,6 +194,58 @@ let assert = require('assert/strict');
 		assert.equal(t, 2);
 	}
 	{
+		let model = defineModel({
+			getters: {
+				aa() {
+					return this.a * 2;
+				},
+				bb() {
+					return this.b * 2;
+				},
+				cc() {
+					return this.c * 2;
+				},
+				dd() {
+					return this.d * 2;
+				},
+			},
+		});
+		let data = {
+			a: ref(1),
+			b: ref(1),
+			c: 1,
+			d: 1,
+		};
+		let instance = model(data);
+		assert.equal(instance.aa, 2);
+		assert.equal(instance.bb, 2);
+		assert.equal(instance.cc, 2);
+		assert.equal(instance.dd, 2);
+		let t = {};
+		['aa', 'bb', 'cc', 'dd'].forEach(key => {
+			t[key] = 0;
+			watch(
+				() => instance[key],
+				() => {
+					t[key]++;
+				},
+				{flush: 'sync'},
+			);
+		});
+		instance.$update(Object.assign(data, {
+			b: ref(2),
+			d: 2,
+		}));
+		assert.equal(instance.aa, 2);
+		assert.equal(instance.bb, 4);
+		assert.equal(instance.cc, 2);
+		assert.equal(instance.dd, 4);
+		assert.equal(t['aa'], 0);
+		assert.equal(t['bb'], 1);
+		assert.equal(t['cc'], 0);
+		assert.equal(t['dd'], 1);
+	}
+	{
 		let itemModel = defineModel();
 		let rootModel = defineModel({
 			state() {
