@@ -28,6 +28,11 @@ function recordEffect(effect) {
 	if (currentScope) {
 		let {effects} = mapScopeToOptions.get(currentScope);
 		effects.add(effect);
+	} else
+	if (getCurrentInstance()) {
+		onUnmounted(() => {
+			stop(effect);
+		});
 	}
 }
 
@@ -88,11 +93,6 @@ function effectScope(fn) {
 		},
 	});
 	recordEffect(scope);
-	if (getCurrentInstance()) {
-		onUnmounted(() => {
-			stop(scope);
-		});
-	}
 	extend(fn);
 	return scope;
 }
