@@ -27,7 +27,7 @@ export default function(object) {
 				Object.keys(object).forEach(key => {
 					let ref = refs[key];
 					if (!ref) {
-						if (isReactive(raw)) {  // isVue2
+						if (isReactive(raw)) { // isVue2
 							ref = shallowReadonly(createObjectPropertyRef(object, key));
 						} else {
 							let value = raw[key];
@@ -47,7 +47,7 @@ export default function(object) {
 				Object.keys(object).forEach(key => {
 					let ref = refs[key];
 					if (!ref) {
-						if (isReactive(raw)) {  // isVue2
+						if (isReactive(raw)) { // isVue2
 							ref = createObjectPropertyRef(object, key);
 						} else {
 							let value = raw[key];
