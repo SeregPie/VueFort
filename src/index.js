@@ -17,6 +17,7 @@ import isObject from './utils/isObject';
 import isString from './utils/isString';
 import noop from './utils/noop';
 
+import createRef from './createRef';
 import toRefs from './toRefs';
 
 function createWatcher(instance, value, key) {
@@ -77,29 +78,27 @@ function isPrivateProperty(key) {
 function createInstance(model, data, {
 	bind = true,
 } = {}) {
-	let that = {};
 	let dataRefs = toRefs(data);
 	let dataKeys = Object.keys(dataRefs);
 	data = shallowRef(reactive(dataRefs));
+	dataRefs = {};
+	dataKeys.forEach(k => {
+		dataRefs[k] = createRef({
+			get() {
+				return data.value[k];
+			},
+			set(value) {
+				data.value[k] = value;
+			},
+		});
+	});
 	let isDestroyed = false;
 	let scope = createEffectScope(bind, onStop => {
 		onStop(() => {
 			isDestroyed = true;
 		});
-		{
-			dataRefs = {};
-			dataKeys.forEach(k => {
-				dataRefs[k] = computed({
-					get() {
-						return data.value[k];
-					},
-					set(value) {
-						data.value[k] = value;
-					},
-				});
-			});
-		}
 	});
+	let that = {};
 	Object.defineProperties(that, {
 		$model: {
 			value: model,
@@ -199,10 +198,10 @@ function createInstance(model, data, {
 
 function defineModel(options) {
 	options = shallowRef(options);
-	let model = function(...args) {
-		return createInstance(model, ...args);
+	let that = function(...args) {
+		return createInstance(that, ...args);
 	};
-	Object.defineProperties(model, {
+	Object.defineProperties(that, {
 		options: {
 			get() {
 				return options.value;
@@ -213,11 +212,11 @@ function defineModel(options) {
 		},
 		update: {
 			value(options) {
-				Object.assign(model, {options});
+				Object.assign(that, {options});
 			},
 		},
 	});
-	return model;
+	return that;
 }
 
 function c(...args) {
