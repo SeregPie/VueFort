@@ -152,7 +152,7 @@ console.log(data.updated); // => undefined
 
 ### effect scope
 
-When the instance is created during a component's `setup` function or lifecycle hooks, the instance is bound to the component's lifecycle and will be automatically destroyed when the component is unmounted.
+When an instance is created during a component's `setup` function or lifecycle hooks, the instance is bound to the component's lifecycle and will be automatically destroyed when the component is unmounted.
 
 In other cases, the instance can be explicitly destroyed by calling the `$destroy` function.
 
@@ -164,7 +164,7 @@ console.log(instance.$isDestroyed); // true
 
 ### nested instances
 
-An instance can be created and used within another instance. The instance is bound to the scope of the parent instance in which it was created.
+An instance can be explicitly bound to the scope of another instance via the `bind` option.
 
 ```javascript
 let itemModel = defineModel();
@@ -179,6 +179,8 @@ let rootModel = defineModel({
       let item = itemModel({
         label,
         value,
+      }, {
+        bind: this,
       });
       items.push(item);
     },
@@ -210,33 +212,6 @@ root.$destroy();
 
 console.log(root.$isDestroyed); // true
 console.log(root.items.every(item => item.$isDestroyed)); // true
-```
-
-### async functions and nested instances
-
-When an instance is created within an async function, the scope can be explicitly passed via the `bind` option.
-
-```javascript
-let itemModel = defineModel();
-
-let rootModel = defineModel({
-  state() {
-    return {items: []};
-  },
-  methods: {
-    async addItem(label) {
-      let value = await API.addItem(label);
-      let {items} = this;
-      let item = itemModel({
-        label,
-        value,
-      }, {
-        bind: this,
-      });
-      items.push(item);
-    },
-  },
-});
 ```
 
 ### dynamic data source

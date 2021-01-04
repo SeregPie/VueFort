@@ -254,7 +254,9 @@ let assert = require('assert/strict');
 			methods: {
 				addItem() {
 					let {items} = this;
-					let item = itemModel();
+					let item = itemModel({}, {
+						bind: this,
+					});
 					items.push(item);
 					return item;
 				},

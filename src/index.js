@@ -10,6 +10,7 @@ import {
 	watch,
 } from './vue';
 
+import getDeep from './utils/getDeep';
 import isArray from './utils/isArray';
 import isFunction from './utils/isFunction';
 import isObject from './utils/isObject';
@@ -18,75 +19,59 @@ import noop from './utils/noop';
 
 import toRefs from './toRefs';
 
-function getDeep(value, keys) {
-	keys.forEach(key => {
-		value = value[key];
+function createWatcher(instance, value, key) {
+	let keys = key.split('.');
+	let getter = ((keys.length === 1)
+		? (() => instance[key])
+		: (() => getDeep(instance, keys))
+	);
+	let f = (value => {
+		let callback;
+		let options;
+		if (isString(value)) {
+			callback = instance[value];
+		} else
+		if (isFunction(value)) {
+			callback = value.bind(instance);
+		} else
+		if (isObject(value)) {
+			({handler: value, ...options} = value);
+			if (isString(value)) {
+				callback = instance[value];
+			} else
+			if (isFunction(value)) {
+				callback = value.bind(instance);
+			}
+		}
+		watch(
+			getter,
+			callback,
+			options,
+		);
 	});
-	return value;
+	if (isArray(value)) {
+		value.forEach(f);
+	} else {
+		f(value);
+	}
 }
 
-function createPathGetter(value, key) {
-	let keys = key.split('.');
-	return ((keys.length === 1)
-		? (() => value[key])
-		: (() => getDeep(value, keys))
-	);
+function createEffectScope(value, fn) {
+	if (value === true) {
+		return effectScope(fn);
+	}
+	if (value === false) {
+		// todo
+	}
+	let scope;
+	extendScope(value, () => {
+		scope = effectScope(fn);
+	});
+	return scope;
 }
 
 function isPrivateProperty(key) {
 	return key.startsWith('_');
-}
-
-function createInstanceMethod(that, v) {
-	return function(...args) {
-		let result;
-		extendScope(that, () => {
-			result = v.apply(that, args);
-		});
-		return result;
-	};
-}
-
-function createInstanceWatcher(that, source, v) {
-	if (isArray(v)) {
-		v.forEach(v => {
-			createInstanceWatcher(that, source, v);
-		});
-	} else {
-		let callback;
-		let options;
-		if (isString(v)) {
-			callback = that[v];
-		} else
-		if (isFunction(v)) {
-			callback = createInstanceMethod(that, v);
-		} else
-		if (isObject(v)) {
-			({handler: v, ...options} = v);
-			if (isString(v)) {
-				callback = that[v];
-			} else
-			if (isFunction(v)) {
-				callback = createInstanceMethod(that, v);
-			}
-		}
-		watch(
-			source,
-			callback,
-			options,
-		);
-	}
-}
-
-function createInstanceEffectScope(v, fn) {
-	if (v === true) {
-		return effectScope(fn);
-	}
-	let result;
-	extendScope(v, () => {
-		result = effectScope(fn);
-	});
-	return result;
 }
 
 function createInstance(model, data, {
@@ -97,7 +82,7 @@ function createInstance(model, data, {
 	let dataKeys = Object.keys(dataRefs);
 	data = shallowRef(reactive(dataRefs));
 	let isDestroyed = false;
-	let scope = createInstanceEffectScope(bind, onStop => {
+	let scope = createEffectScope(bind, onStop => {
 		onStop(() => {
 			isDestroyed = true;
 		});
@@ -177,7 +162,7 @@ function createInstance(model, data, {
 		(Object
 			.entries(getters)
 			.forEach(([k, v]) => {
-				let ref = computed(createInstanceMethod(that, v));
+				let ref = computed(v.bind(that));
 				descriptors[k] = {
 					get() {
 						return ref.value;
@@ -189,7 +174,7 @@ function createInstance(model, data, {
 			.entries(methods)
 			.forEach(([k, v]) => {
 				descriptors[k] = {
-					value: createInstanceMethod(that, v),
+					value: v.bind(that),
 				};
 			})
 		);
@@ -205,8 +190,7 @@ function createInstance(model, data, {
 		(Object
 			.entries(watchProperties)
 			.forEach(([k, v]) => {
-				let getter = createPathGetter(that, k);
-				createInstanceWatcher(that, getter, v);
+				createWatcher(that, v, k);
 			})
 		);
 	});
