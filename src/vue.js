@@ -23,18 +23,6 @@ let currentScope;
 
 let mapScopeToOptions = new WeakMap();
 
-function recordEffect(effect) {
-	if (currentScope) {
-		let {effects} = mapScopeToOptions.get(currentScope);
-		effects.add(effect);
-	} else
-	if (getCurrentInstance()) {
-		onUnmounted(() => {
-			stop(effect);
-		});
-	}
-}
-
 function isEffectScope(value) {
 	return mapScopeToOptions.has(value);
 }
@@ -57,6 +45,18 @@ function stop(value) {
 	}
 	if (hasEffectScope(value)) {
 		return stop(value.$effectScope);
+	}
+}
+
+function recordEffect(effect) {
+	if (currentScope) {
+		let {effects} = mapScopeToOptions.get(currentScope);
+		effects.add(effect);
+	} else
+	if (getCurrentInstance()) {
+		onUnmounted(() => {
+			stop(effect);
+		});
 	}
 }
 
