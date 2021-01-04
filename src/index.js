@@ -9,13 +9,12 @@ import {
 	stop,
 	watch,
 } from './vue';
-import {
-	isArray,
-	isFunction,
-	isObject,
-	isString,
-	NOOP,
-} from '@vue/shared';
+
+import isArray from './utils/isArray';
+import isFunction from './utils/isFunction';
+import isObject from './utils/isObject';
+import isString from './utils/isString';
+import noop from './utils/noop';
 
 import toRefs from './toRefs';
 
@@ -153,7 +152,7 @@ function createInstance(model, data, {
 		let descriptors = {};
 		let {
 			options: {
-				state = NOOP,
+				state = noop,
 				getters = {},
 				watch: watchProperties = {},
 				methods = {},

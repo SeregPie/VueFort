@@ -6,7 +6,8 @@ import {
 	shallowRef,
 	toRaw,
 } from 'vue-demi';
-import {isObject} from '@vue/shared';
+
+import isObject from './utils/isObject';
 
 import createObjectPropertyRef from './createObjectPropertyRef';
 

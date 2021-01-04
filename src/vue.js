@@ -4,11 +4,10 @@ import {
 	shallowRef,
 	watch,
 } from 'vue-demi';
-import {
-	hasChanged,
-	isFunction,
-	NOOP,
-} from '@vue/shared';
+
+import isEqual from './utils/isEqual';
+import isFunction from './utils/isFunction';
+import noop from './utils/noop';
 
 import createRef from './createRef';
 
@@ -112,13 +111,13 @@ function _computed(arg) {
 	let set;
 	if (isFunction(arg)) {
 		get = arg;
-		set = NOOP;
+		set = noop;
 	} else {
 		({get, set} = arg);
 	}
 	let effect = {
 		$isEffect: true,
-		stop: NOOP,
+		stop: noop,
 	};
 	recordEffect(effect);
 	let ref;
@@ -128,10 +127,9 @@ function _computed(arg) {
 				effect.stop = watch(get, value => {
 					if (!ref) {
 						ref = shallowRef(value);
-					} else {
-						if (hasChanged(ref.value, value)) {
-							ref.value = value;
-						}
+					} else
+					if (!isEqual(ref.value, value)) {
+						ref.value = value;
 					}
 				}, {
 					flush: 'sync',

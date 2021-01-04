@@ -1,15 +1,14 @@
 import {customRef} from 'vue-demi';
-import {
-	isFunction,
-	NOOP,
-} from '@vue/shared';
+
+import isFunction from './utils/isFunction';
+import noop from './utils/noop';
 
 export default function(arg) {
 	let get;
 	let set;
 	if (isFunction(arg)) {
 		get = arg;
-		set = NOOP;
+		set = noop;
 	} else {
 		({get, set} = arg);
 	}
