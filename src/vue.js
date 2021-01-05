@@ -5,9 +5,11 @@ import {
 	watch,
 } from 'vue-demi';
 
-import isEqual from './utils/isEqual';
-import isFunction from './utils/isFunction';
-import noop from './utils/noop';
+import {
+	isEqual,
+	isFunction,
+	noop,
+} from './utils';
 
 import createRef from './createRef';
 
@@ -157,5 +159,7 @@ export {
 	_watch as watch,
 	effectScope,
 	extendScope,
+	hasEffectScope,
+	isEffectScope,
 	stop,
 };

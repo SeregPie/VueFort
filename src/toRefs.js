@@ -7,7 +7,7 @@ import {
 	toRaw,
 } from 'vue-demi';
 
-import isObject from './utils/isObject';
+import {isObject} from './utils';
 
 import createObjectPropertyRef from './createObjectPropertyRef';
 

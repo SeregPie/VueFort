@@ -1,48 +1,57 @@
-import {
-	reactive,
-	shallowRef,
-} from 'vue-demi';
+import {shallowRef} from 'vue-demi';
 import {
 	computed,
 	effectScope,
 	extendScope,
+	hasEffectScope,
+	isEffectScope,
 	stop,
 	watch,
 } from './vue';
 
-import getDeep from './utils/getDeep';
-import isArray from './utils/isArray';
-import isFunction from './utils/isFunction';
-import isObject from './utils/isObject';
-import isString from './utils/isString';
-import noop from './utils/noop';
+import {
+	getDeep,
+	isArray,
+	isFunction,
+	isObject,
+	isString,
+} from './utils';
 
 import createRef from './createRef';
+import customEffect from './customEffect';
 import toRefs from './toRefs';
 
-function createWatcher(instance, value, key) {
+function createPathGetter(value, key) {
 	let keys = key.split('.');
-	let getter = ((keys.length === 1)
-		? (() => instance[key])
-		: (() => getDeep(instance, keys))
+	return ((keys.length === 1)
+		? (() => value[key])
+		: (() => getDeep(value, keys))
 	);
-	let f = (value => {
+}
+
+function createWatcher(that, v, k) {
+	let getter = createPathGetter(that, k);
+	let f = (v => {
 		let callback;
 		let options;
-		if (isString(value)) {
-			callback = instance[value];
+		if (isString(v)) {
+			callback = that[v];
 		} else
-		if (isFunction(value)) {
-			callback = value.bind(instance);
+		if (isFunction(v)) {
+			callback = v.bind(that);
 		} else
-		if (isObject(value)) {
-			({handler: value, ...options} = value);
-			if (isString(value)) {
-				callback = instance[value];
+		if (isObject(v)) {
+			({handler: v, ...options} = v);
+			if (isString(v)) {
+				callback = that[v];
 			} else
-			if (isFunction(value)) {
-				callback = value.bind(instance);
+			if (isFunction(v)) {
+				callback = v.bind(that);
+			} else {
+				// warn
 			}
+		} else {
+			// warn
 		}
 		watch(
 			getter,
@@ -50,48 +59,68 @@ function createWatcher(instance, value, key) {
 			options,
 		);
 	});
-	if (isArray(value)) {
-		value.forEach(f);
+	if (isArray(v)) {
+		v.forEach(f);
 	} else {
-		f(value);
+		f(v);
 	}
 }
 
-function createEffectScope(value, fn) {
-	if (value === true) {
+function createEffectScope(v, fn) {
+	if (v === true) {
 		return effectScope(fn);
 	}
-	if (value === false) {
+	if (v === false) {
 		// todo
 	}
-	let scope;
-	extendScope(value, () => {
-		scope = effectScope(fn);
-	});
-	return scope;
+	if (isEffectScope(v) || hasEffectScope(v)) {
+		let scope;
+		extendScope(v, () => {
+			scope = effectScope(fn);
+		});
+		return scope;
+	}
+	// warn
 }
 
-function isPrivateProperty(key) {
-	return key.startsWith('_');
+function isPrivateProperty(k) {
+	return k.startsWith('_');
 }
 
 function createInstance(model, data, {
 	bind = true,
 } = {}) {
-	let dataRefs = toRefs(data);
-	let dataKeys = Object.keys(dataRefs);
-	data = shallowRef(reactive(dataRefs));
-	dataRefs = {};
-	dataKeys.forEach(k => {
-		dataRefs[k] = createRef({
-			get() {
-				return data.value[k];
-			},
-			set(value) {
-				data.value[k] = value;
-			},
-		});
+	let dataRefs = {};
+	let dataSetters = {};
+	let updateDataRefs = (value => {
+		(Object
+			.entries(dataSetters)
+			.forEach(([k, set]) => {
+				set(value[k]);
+			})
+		);
 	});
+	(Object
+		.entries(toRefs(data))
+		.forEach(([k, ref]) => {
+			let {track, trigger} = customEffect();
+			dataRefs[k] = createRef({
+				get() {
+					track();
+					return ref.value;
+				},
+				set(value) {
+					ref.value = value;
+				},
+			});
+			dataSetters[k] = (value => {
+				if (ref !== value) {
+					ref = value;
+					trigger();
+				}
+			});
+		})
+	);
 	let isDestroyed = false;
 	let scope = createEffectScope(bind, onStop => {
 		onStop(() => {
@@ -106,19 +135,9 @@ function createInstance(model, data, {
 		$effectScope: {
 			value: scope,
 		},
-		$data: {
-			get() {
-				return data.value;
-			},
-			set(value) {
-				data.value = reactive(toRefs(value));
-			},
-		},
 		$update: {
 			value(data) {
-				Object.assign(that, {
-					$data: data,
-				});
+				updateDataRefs(toRefs(data));
 			},
 		},
 		$destroy: {
@@ -133,20 +152,25 @@ function createInstance(model, data, {
 		},
 	});
 	extendScope(scope, () => {
-		let descriptors = {};
+		let refs = {...dataRefs};
 		let {
 			options: {
-				state = noop,
-				getters = {},
-				watch: watchProperties = {},
-				methods = {},
+				state: stateFn,
+				getters,
+				watch: watchProperties,
+				methods,
 			} = {},
 		} = model;
+		if (stateFn) {
+			if (isFunction(stateFn)) {
+				Object.assign(refs, toRefs(stateFn({...dataRefs})));
+			} else {
+				// warn
+			}
+		}
+		let descriptors = {};
 		(Object
-			.entries({
-				...dataRefs,
-				...toRefs(state({...dataRefs})),
-			})
+			.entries(refs)
 			.forEach(([k, ref]) => {
 				descriptors[k] = {
 					get() {
@@ -158,25 +182,37 @@ function createInstance(model, data, {
 				};
 			})
 		);
-		(Object
-			.entries(getters)
-			.forEach(([k, v]) => {
-				let ref = computed(v.bind(that));
-				descriptors[k] = {
-					get() {
-						return ref.value;
-					},
-				};
-			})
-		);
-		(Object
-			.entries(methods)
-			.forEach(([k, v]) => {
-				descriptors[k] = {
-					value: v.bind(that),
-				};
-			})
-		);
+		if (getters) {
+			(Object
+				.entries(getters)
+				.forEach(([k, v]) => {
+					if (isFunction(v)) {
+						let ref = computed(v.bind(that));
+						descriptors[k] = {
+							get() {
+								return ref.value;
+							},
+						};
+					} else {
+						// warn
+					}
+				})
+			);
+		}
+		if (methods) {
+			(Object
+				.entries(methods)
+				.forEach(([k, v]) => {
+					if (isFunction(v)) {
+						descriptors[k] = {
+							value: v.bind(that),
+						};
+					} else {
+						// warn
+					}
+				})
+			);
+		}
 		(Object
 			.entries(descriptors)
 			.forEach(([key, descriptor]) => {
@@ -186,12 +222,14 @@ function createInstance(model, data, {
 			})
 		);
 		Object.defineProperties(that, descriptors);
-		(Object
-			.entries(watchProperties)
-			.forEach(([k, v]) => {
-				createWatcher(that, v, k);
-			})
-		);
+		if (watchProperties) {
+			(Object
+				.entries(watchProperties)
+				.forEach(([k, v]) => {
+					createWatcher(that, v, k);
+				})
+			);
+		}
 	});
 	return that;
 }

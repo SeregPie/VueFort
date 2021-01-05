@@ -1,7 +1,9 @@
 import {customRef} from 'vue-demi';
 
-import isFunction from './utils/isFunction';
-import noop from './utils/noop';
+import {
+	isFunction,
+	noop,
+} from './utils';
 
 export default function(arg) {
 	let get;
