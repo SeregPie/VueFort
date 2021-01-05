@@ -92,7 +92,8 @@ function createInstance(model, data, {
 } = {}) {
 	let dataRefs = {};
 	let dataSetters = {};
-	let updateDataRefs = (value => {
+	let updateData = (value => {
+		value = toRefs(value);
 		(Object
 			.entries(dataSetters)
 			.forEach(([k, set]) => {
@@ -137,7 +138,7 @@ function createInstance(model, data, {
 		},
 		$update: {
 			value(data) {
-				updateDataRefs(toRefs(data));
+				updateData(data);
 			},
 		},
 		$destroy: {
