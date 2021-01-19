@@ -1,7 +1,7 @@
 {
 	"name": "vue-fort",
 	"version": "1.4.0",
-	"description": "Data modeling for Vue.",
+	"description": "The state management for Vue.",
 	"keywords": [
 		"data",
 		"model",

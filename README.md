@@ -1,6 +1,6 @@
 # VueFort
 
-Data modeling for Vue.
+The state management for Vue.
 
 Works for Vue 2 & 3.
 
