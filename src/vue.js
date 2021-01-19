@@ -5,13 +5,10 @@ import {
 	watch,
 } from 'vue-demi';
 
-import {
-	isEqual,
-	isFunction,
-	noop,
-} from './utils';
-
 import createRef from './createRef';
+import isEqual from './utils/isEqual';
+import isFunction from './utils/isFunction';
+import noop from './utils/noop';
 
 function isEffect(value) {
 	return !!(value && value.$isEffect === true);

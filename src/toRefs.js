@@ -7,9 +7,8 @@ import {
 	toRaw,
 } from 'vue-demi';
 
-import {isObject} from './utils';
-
 import createObjectPropertyRef from './createObjectPropertyRef';
+import isObject from './utils/isObject';
 
 let mapReactiveObjectToRefs = new WeakMap();
 

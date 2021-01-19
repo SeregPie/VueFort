@@ -22,7 +22,7 @@ npm i @vue/composition-api # if using Vue 2
 
 ```javascript
 import {
-  defineModel,
+  createInstance,
   toRefs,
 } from 'vue-fort';
 ```
@@ -47,10 +47,17 @@ The module is globally available as `VueFort`.
 
 ### basics
 
-Define a model.
+Create a state.
 
 ```javascript
-let model = defineModel({
+let state = reactive({count: 1});
+```
+
+Create an instance from the state.
+
+```javascript
+let instance = createInstance({
+  state,
   getters: {
     countDouble() {
       return this.count * 2;
@@ -69,14 +76,6 @@ let model = defineModel({
 });
 ```
 
-Create an instance from the data.
-
-```javascript
-let data = reactive({count: 1});
-
-let instance = model(data);
-```
-
 Access the properties and methods of the instance directly.
 
 ```javascript
@@ -89,65 +88,16 @@ console.log(instance.count); // => 2
 console.log(instance.countDouble); // => 4
 ```
 
-The changes to the underlying data are reflected back to the instance and vice versa.
+The changes to the underlying state are reflected back to the instance and vice versa.
 
 ```javascript
-data.count = 8;
+state.count = 8;
 
 console.log(instance.count); // => 8
 
 instance.inc();
 
-console.log(data.count); // => 9
-```
-
-### internal state
-
-Use the `state` method to rename the passed references and add the new properties.
-
-```javascript
-let model = defineModel({
-  state({tags}) {
-    return {
-      _tags: tags,
-      updated: false,
-    };
-  },
-  getters: {
-    tags() {
-      let {_tags: tags} = this;
-      return [...(new Set(tags))].sort();
-    },
-  },
-  methods: {
-    addTag(tag) {
-      let {_tags: tags} = this;
-      tags.push(tag);
-      this.updated = true;
-    },
-  },
-});
-
-let data = reactive({
-  tags: ['fluffy', 'bright'],
-});
-
-let instance = model(data);
-
-console.log(instance.tags); // => ['bright', 'fluffy']
-console.log(instance.updated); // => false
-
-instance.addTag('angry');
-
-console.log(instance.tags); // => ['angry', 'bright', 'fluffy']
-console.log(instance.updated); // => true
-```
-
-The instance does not overwrite or extend the underlying data.
-
-```javascript
-console.log(data.tags); // => ['fluffy', 'bright', 'angry']
-console.log(data.updated); // => undefined
+console.log(state.count); // => 9
 ```
 
 ### effect scope
@@ -167,19 +117,18 @@ console.log(instance.$isDestroyed); // true
 An instance can be explicitly bound to the scope of another instance via the `bind` option.
 
 ```javascript
-let itemModel = defineModel();
-
-let rootModel = defineModel({
-  state() {
-    return {items: []};
+let root = createInstance({
+  state: {
+    items: [],
   },
   methods: {
     addItem(label, value) {
       let {items} = this;
-      let item = itemModel({
-        label,
-        value,
-      }, {
+      let item = createInstance({
+        state: {
+          label,
+          value,
+        },
         bind: this,
       });
       items.push(item);
@@ -191,8 +140,6 @@ let rootModel = defineModel({
     },
   },
 });
-
-let root = rootModel();
 
 root.addItem('a', 23);
 root.addItem('b', 25);
@@ -214,42 +161,7 @@ console.log(root.$isDestroyed); // true
 console.log(root.items.every(item => item.$isDestroyed)); // true
 ```
 
-### dynamic data source
-
-Replace the underlying data by calling the `$update` function.
-
-```javascript
-let model = defineModel({
-  getters: {
-    countDouble() {
-      return this.count * 2;
-    },
-  },
-});
-
-let instance = model({count: 1});
-
-console.log(instance.countDouble); // 2
-
-instance.$update({count: 2});
-
-console.log(instance.countDouble); // 4
-```
-
 ## API
-
-### defineModel
-
-```
-defineModel({
-  state,
-  getters,
-  watch,
-  methods,
-})
-```
-
-See the guide.
 
 ### toRefs
 
