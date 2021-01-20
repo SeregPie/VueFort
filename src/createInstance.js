@@ -61,82 +61,98 @@ export default function({
 		},
 	});
 	extendScope(scope, () => {
-		Object.entries(toRefs(reactive(state))).forEach(([k, ref]) => {
-			Object.defineProperty(that, k, {
-				enumerable: true,
-				get() {
-					return ref.value;
-				},
-				set(value) {
-					ref.value = value;
-				},
-			});
-		});
-		Object.entries(getters).forEach(([k, v]) => {
-			if (isFunction(v)) {
-				let ref = computed(v.bind(that));
+		if (isObject(state)) {
+			Object.entries(toRefs(reactive(state))).forEach(([k, ref]) => {
 				Object.defineProperty(that, k, {
 					enumerable: true,
 					get() {
 						return ref.value;
 					},
+					set(value) {
+						ref.value = value;
+					},
 				});
-			} else {
-				// warn
-			}
-		});
-		Object.entries(methods).forEach(([k, v]) => {
-			if (isFunction(v)) {
-				Object.defineProperty(that, k, {
-					enumerable: true,
-					value: v.bind(that),
-				});
-			} else {
-				// warn
-			}
-		});
-		Object.entries(watchProperties).forEach(([k, v]) => {
-			let getter = (key => {
-				let keys = key.split('.');
-				return ((keys.length === 1)
-					? (() => that[key])
-					: (() => getDeep(that, keys))
-				);
-			})(k);
-			let f = (v => {
-				let callback;
-				let options;
-				if (isString(v)) {
-					callback = that[v];
-				} else
+			});
+		} else {
+			// warn
+		}
+		if (isObject(getters)) {
+			Object.entries(getters).forEach(([k, v]) => {
 				if (isFunction(v)) {
-					callback = v.bind(that);
-				} else
-				if (isObject(v)) {
-					({handler: v, ...options} = v);
+					let ref = computed(v.bind(that));
+					Object.defineProperty(that, k, {
+						enumerable: true,
+						get() {
+							return ref.value;
+						},
+					});
+				} else {
+					// warn
+				}
+			});
+		} else {
+			// warn
+		}
+		if (isObject(methods)) {
+			Object.entries(methods).forEach(([k, v]) => {
+				if (isFunction(v)) {
+					Object.defineProperty(that, k, {
+						enumerable: true,
+						value: v.bind(that),
+					});
+				} else {
+					// warn
+				}
+			});
+		} else {
+			// warn
+		}
+		if (isObject(watchProperties)) {
+			Object.entries(watchProperties).forEach(([k, v]) => {
+				let getter = (key => {
+					let keys = key.split('.');
+					return ((keys.length === 1)
+						? (() => that[key])
+						: (() => getDeep(that, keys))
+					);
+				})(k);
+				let f = (v => {
+					let callback;
+					let options;
 					if (isString(v)) {
 						callback = that[v];
 					} else
 					if (isFunction(v)) {
 						callback = v.bind(that);
+					} else
+					if (isObject(v)) {
+						({handler: v, ...options} = v);
+						if (isString(v)) {
+							callback = that[v];
+						} else
+						if (isFunction(v)) {
+							callback = v.bind(that);
+						} else {
+							// warn
+						}
 					} else {
 						// warn
 					}
+					watch(
+						getter,
+						callback,
+						options,
+					);
+				});
+				if (isArray(v)) {
+					v.forEach(f);
 				} else {
-					// warn
+					f(v);
 				}
-				watch(
-					getter,
-					callback,
-					options,
-				);
 			});
-			if (isArray(v)) {
-				v.forEach(f);
-			} else {
-				f(v);
-			}
-		});
+		} else {
+			// warn
+		}
 	});
 	return that;
 }
