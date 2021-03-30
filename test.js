@@ -161,7 +161,8 @@ let assert = require('assert').strict;
 	}
 	{
 		let state = reactive({count: 1});
-		let t = 0;
+		let t0 = 0;
+		let t1 = 0;
 		let instance = createInstance({
 			state,
 			getters: {
@@ -172,7 +173,7 @@ let assert = require('assert').strict;
 			watch: {
 				countDouble: {
 					handler() {
-						t++;
+						t0++;
 					},
 					flush: 'sync',
 				},
@@ -181,17 +182,22 @@ let assert = require('assert').strict;
 		watch(
 			() => instance.countDouble,
 			() => {
-				t++;
+				t1++;
 			},
 			{flush: 'sync'},
 		);
-		assert.equal(t, 0);
+		assert.equal(t0, 0);
+		assert.equal(t1, 0);
 		state.count++;
-		assert.equal(t, 2);
+		assert.equal(instance.countDouble, 4);
+		assert.equal(t0, 1);
+		assert.equal(t1, 1);
 		instance.$destroy();
 		assert.equal(instance.$isDestroyed, true);
 		state.count++;
-		assert.equal(t, 2);
+		assert.equal(instance.countDouble, 4);
+		assert.equal(t0, 1);
+		assert.equal(t1, 1);
 	}
 	{
 		let root = createInstance({

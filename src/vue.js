@@ -1,12 +1,10 @@
 import {
+	computed,
 	getCurrentInstance,
 	onUnmounted,
-	shallowRef,
 	watch,
 } from 'vue-demi';
 
-import dummyRef from './dummyRef';
-import isEqual from './utils/isEqual';
 import isFunction from './utils/isFunction';
 import noop from './utils/noop';
 
@@ -114,28 +112,21 @@ function _computed(arg) {
 	} else {
 		({get, set} = arg);
 	}
+	let active = true;
 	let effect = {
 		$isEffect: true,
-		stop: noop,
+		stop() {
+			active = false;
+		},
 	};
 	recordEffect(effect);
-	let ref;
-	return dummyRef({
+	let value;
+	return computed({
 		get() {
-			if (!ref) {
-				effect.stop = watch(get, value => {
-					if (!ref) {
-						ref = shallowRef(value);
-					} else
-					if (!isEqual(ref.value, value)) {
-						ref.value = value;
-					}
-				}, {
-					flush: 'sync',
-					immediate: true,
-				});
+			if (active) {
+				value = get();
 			}
-			return ref.value;
+			return value;
 		},
 		set,
 	});
