@@ -1,7 +1,7 @@
-import createRef from './createRef';
+import dummyRef from './dummyRef';
 
 export default function(object, key) {
-	return createRef({
+	return dummyRef({
 		get() {
 			return object[key];
 		},

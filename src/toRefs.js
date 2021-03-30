@@ -7,8 +7,8 @@ import {
 	toRaw,
 } from 'vue-demi';
 
-import createObjectPropertyRef from './createObjectPropertyRef';
 import isObject from './utils/isObject';
+import toRef from './toRef';
 
 let mapReactiveObjectToRefs = new WeakMap();
 
@@ -27,7 +27,7 @@ export default function(object) {
 					let ref = refs[key];
 					if (!ref) {
 						if (isReactive(raw)) { // isVue2
-							ref = shallowReadonly(createObjectPropertyRef(object, key));
+							ref = shallowReadonly(toRef(object, key));
 						} else {
 							let value = raw[key];
 							ref = (isRef(value)
@@ -35,7 +35,7 @@ export default function(object) {
 									? value
 									: shallowReadonly(value)
 								)
-								: shallowReadonly(createObjectPropertyRef(object, key))
+								: shallowReadonly(toRef(object, key))
 							);
 						}
 						refs[key] = ref;
@@ -47,12 +47,12 @@ export default function(object) {
 					let ref = refs[key];
 					if (!ref) {
 						if (isReactive(raw)) { // isVue2
-							ref = createObjectPropertyRef(object, key);
+							ref = toRef(object, key);
 						} else {
 							let value = raw[key];
 							ref = (isRef(value)
 								? value
-								: createObjectPropertyRef(object, key)
+								: toRef(object, key)
 							);
 						}
 						refs[key] = ref;

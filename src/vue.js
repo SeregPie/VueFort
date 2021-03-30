@@ -5,7 +5,7 @@ import {
 	watch,
 } from 'vue-demi';
 
-import createRef from './createRef';
+import dummyRef from './dummyRef';
 import isEqual from './utils/isEqual';
 import isFunction from './utils/isFunction';
 import noop from './utils/noop';
@@ -120,7 +120,7 @@ function _computed(arg) {
 	};
 	recordEffect(effect);
 	let ref;
-	return createRef({
+	return dummyRef({
 		get() {
 			if (!ref) {
 				effect.stop = watch(get, value => {
