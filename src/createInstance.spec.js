@@ -5,7 +5,7 @@ import {
 import createInstance from './createInstance';
 
 describe('createInstance', () => {
-	test('basic functionality', () => {
+	test('basic', () => {
 		let state = reactive({count: 1});
 		let instance = createInstance({
 			state,
@@ -37,8 +37,8 @@ describe('createInstance', () => {
 		expect(instance.countDouble).toBe(8);
 	});
 	test('destroy instance', () => {
-		let state = reactive({count: 1});
 		let spy = jest.fn();
+		let state = reactive({count: 1});
 		let instance = createInstance({
 			state,
 			getters: {

@@ -8,6 +8,7 @@ import {
 } from 'vue-demi';
 
 import isObject from './utils/isObject';
+
 import toRef from './toRef';
 
 let mapReactiveObjectToRefs = new WeakMap();
