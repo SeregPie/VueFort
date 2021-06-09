@@ -1,3 +1,5 @@
+// todo: refactor
+
 import {reactive} from 'vue-demi';
 
 import isFunction from './utils/isFunction';
