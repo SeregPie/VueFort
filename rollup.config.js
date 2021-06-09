@@ -13,12 +13,7 @@ export default {
 	input: 'src/index.js',
 	plugins: [
 		nodeResolve(),
-		babel({
-			babelHelpers: 'bundled',
-			presets: [['@babel/preset-env', {
-				targets: 'defaults and not IE 11',
-			}]],
-		}),
+		babel({babelHelpers: 'bundled'}),
 		terser(),
 	],
 	output: {
