@@ -172,16 +172,3 @@ root.$destroy();
 console.log(root.$isDestroyed); // true
 console.log(root.items.every(item => item.$isDestroyed)); // true
 ```
-
-## API
-
-### toRefs
-
-`toRefs(object)`
-
-Creates an object where each property is a memoized reference pointing to the corresponding property of the original object.
-
-```javascript
-let data = reactive({a: 1});
-console.log(toRefs(data).a === toRefs(data).a); // => true
-```
