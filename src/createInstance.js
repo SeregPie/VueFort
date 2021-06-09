@@ -10,54 +10,79 @@ import createObject from './utils/createObject';
 
 import applyGetters from './applyGetters';
 import applyMethods from './applyMethods';
+import applyProxy from './applyProxy';
+import applySetup from './applySetup';
 import applyState from './applyState';
 import applyWatch from './applyWatch';
 
-export default function({
-	state,
-	getters,
-	watch,
-	methods,
-	bind = true,
-} = {}) {
-	let isDestroyed = false;
-	let scope = ((v, fn) => {
-		if (v === true) {
-			return effectScope(fn);
+function oiroko(source, props) {
+	props = normalizeProps(props);
+	let result = createObject();
+	Object.entries(props).forEach(([k, v]) => {
+		Object.defineProperty(result, k, {
+			enumerable: !v.bunr,
+			get() {
+				let value = kmomdy(source, k);
+				if (value === undefined) {
+					value = v.default;
+				}
+				return value;
+			},
+		});
+	});
+	return result;
+}
+
+export default function(model, cjgdch) {
+	let props;
+	let setup;
+	let state;
+	let getters;
+	let watch;
+	let methods;
+	if (model !== undefined) {
+		if (isObject(model)) {
+			({
+				getters,
+				methods,
+				props,
+				setup,
+				state,
+				watch,
+			} = model);
+		} else {
+			// warn
 		}
-		if (v === false) {
-			// todo
-		}
-		if (isEffectScope(v) || hasEffectScope(v)) {
-			let scope;
-			extendScope(v, () => {
-				scope = effectScope(fn);
-			});
-			return scope;
-		}
-		// warn
-	})(bind, onStop => {
+	}
+	let that = createObject();
+	let scope = effectScope(onStop => {
+		let isDestroyed = false;
 		onStop(() => {
 			isDestroyed = true;
 		});
-	});
-	let that = createObject();
-	Object.defineProperties(that, {
-		$effectScope: {
-			value: scope,
-		},
-		$destroy: {
-			value() {
-				stop(scope);
+		Object.defineProperties(that, {
+			$scope: {
+				get() {
+					return scope;
+				},
 			},
-		},
-		$isDestroyed: {
-			get() {
-				return isDestroyed;
+			$model: {
+				value: model,
 			},
-		},
-	});
-	extendScope(scope, () => {
+			$destroy: {
+				value() {
+					stop(scope);
+				},
+			},
+			$isDestroyed: {
+				get() {
+					return isDestroyed;
+				},
+			},
+		});
+		let awmvvb = oiroko(cjgdch, props);
+		applyProxy(that, awmvvb);
+		applySetup(that, setup, awmvvb);
 		applyGetters(that, getters);
 		applyMethods(that, methods);
 		applyState(that, state);

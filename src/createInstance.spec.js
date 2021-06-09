@@ -1,5 +1,7 @@
 import {
 	reactive,
+	shallowRef,
+	toRefs,
 	watch,
 } from 'vue-demi';
 import createInstance from './createInstance';
@@ -89,5 +91,126 @@ describe('createInstance', () => {
 		root.$destroy();
 		expect(root.$isDestroyed).toBe(true);
 		expect(root.items.every(item => item.$isDestroyed)).toBe(true);
+	});
+	test('props', () => {
+		let model = {
+			props: {
+				a: {},
+				b: {
+					default: 'bbb',
+				},
+				c: {
+					as: 'cc',
+				},
+				d: {
+					detached: true,
+				},
+				e: {
+					default: 'eee',
+					as: 'ee',
+				},
+				f: {
+					default: 'fff',
+					detached: true,
+				},
+				g: {
+					as: 'gg',
+					detached: true,
+				},
+				h: {
+					default: 'hhh',
+					as: 'hh',
+					detached: true,
+				},
+			},
+			setup(props) {
+				let propsRefs = toRefs(props);
+				let state = reactive(propsRefs);
+				return {state};
+			},
+		};
+		let propsRef = shallowRef();
+		let instance = createInstance(model, propsRef);
+		expect(instance).toHaveProperty('a');
+		expect(instance.a).toBeUndefined();
+		expect(instance.state).toHaveProperty('a');
+		expect(instance.state.a).toBeUndefined();
+		expect(instance).toHaveProperty('b');
+		expect(instance.b).toBe('bbb');
+		expect(instance.state).toHaveProperty('b');
+		expect(instance.state.b).toBe('bbb');
+		expect(instance).not.toHaveProperty('c');
+		expect(instance).toHaveProperty('cc');
+		expect(instance.cc).toBeUndefined();
+		expect(instance.state).not.toHaveProperty('c');
+		expect(instance.state).toHaveProperty('cc');
+		expect(instance.state.cc).toBeUndefined();
+		expect(instance).not.toHaveProperty('d');
+		expect(instance.state).toHaveProperty('d');
+		expect(instance.state.d).toBeUndefined();
+		expect(instance).not.toHaveProperty('e');
+		expect(instance).toHaveProperty('ee');
+		expect(instance.ee).toBe('eee');
+		expect(instance.state).not.toHaveProperty('e');
+		expect(instance.state).toHaveProperty('ee');
+		expect(instance.state.ee).toBe('eee');
+		expect(instance).not.toHaveProperty('f');
+		expect(instance.state).toHaveProperty('f');
+		expect(instance.state.f).toBe('fff');
+		expect(instance).not.toHaveProperty('g');
+		expect(instance.state).not.toHaveProperty('g');
+		expect(instance.state).toHaveProperty('gg');
+		expect(instance.state.gg).toBeUndefined();
+		expect(instance).not.toHaveProperty('h');
+		expect(instance.state).not.toHaveProperty('h');
+		expect(instance.state).toHaveProperty('hh');
+		expect(instance.state.hh).toBe('hhh');
+		propsRef.value = {
+			a: 'aaaa',
+			b: 'bbbb',
+			c: 'cccc',
+			d: 'dddd',
+			e: 'eeee',
+			f: 'ffff',
+			g: 'gggg',
+			h: 'hhhh',
+			i: 'iiii',
+		};
+		expect(instance).toHaveProperty('a');
+		expect(instance.a).toBe('aaaa');
+		expect(instance.state).toHaveProperty('a');
+		expect(instance.state.a).toBe('aaaa');
+		expect(instance).toHaveProperty('b');
+		expect(instance.b).toBe('bbbb');
+		expect(instance.state).toHaveProperty('b');
+		expect(instance.state.b).toBe('bbbb');
+		expect(instance).not.toHaveProperty('c');
+		expect(instance).toHaveProperty('cc');
+		expect(instance.cc).toBe('cccc');
+		expect(instance.state).not.toHaveProperty('c');
+		expect(instance.state).toHaveProperty('cc');
+		expect(instance.state.cc).toBe('cccc');
+		expect(instance).not.toHaveProperty('d');
+		expect(instance.state).toHaveProperty('d');
+		expect(instance.state.d).toBe('dddd');
+		expect(instance).not.toHaveProperty('e');
+		expect(instance).toHaveProperty('ee');
+		expect(instance.ee).toBe('eeee');
+		expect(instance.state).not.toHaveProperty('e');
+		expect(instance.state).toHaveProperty('ee');
+		expect(instance.state.ee).toBe('eeee');
+		expect(instance).not.toHaveProperty('f');
+		expect(instance.state).toHaveProperty('f');
+		expect(instance.state.f).toBe('ffff');
+		expect(instance).not.toHaveProperty('g');
+		expect(instance.state).not.toHaveProperty('g');
+		expect(instance.state).toHaveProperty('gg');
+		expect(instance.state.gg).toBe('gggg');
+		expect(instance).not.toHaveProperty('h');
+		expect(instance.state).not.toHaveProperty('h');
+		expect(instance.state).toHaveProperty('hh');
+		expect(instance.state.hh).toBe('hhhh');
+		expect(instance).not.toHaveProperty('i');
+		expect(instance.state).not.toHaveProperty('i');
 	});
 });
