@@ -100,6 +100,18 @@ instance.inc();
 console.log(state.count); // => 9
 ```
 
+### state as function
+
+The `state` property can also be a function for the reusable options.
+
+```javascript
+let instance = createInstance({
+  state() {
+    return {count: 1};
+  },
+});
+```
+
 ### effect scope
 
 When an instance is created during a component's `setup` function or lifecycle hooks, the instance is bound to the component's lifecycle and will be automatically destroyed when the component is unmounted.
@@ -159,17 +171,4 @@ root.$destroy();
 
 console.log(root.$isDestroyed); // true
 console.log(root.items.every(item => item.$isDestroyed)); // true
-```
-
-## API
-
-### toRefs
-
-`toRefs(object)`
-
-Creates an object where each property is a memoized reference pointing to the corresponding property of the original object.
-
-```javascript
-let data = reactive({a: 1});
-console.log(toRefs(data).a === toRefs(data).a); // => true
 ```
