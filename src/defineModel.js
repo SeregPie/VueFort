@@ -1,22 +1,11 @@
-import {
-	reactive,
-	shallowRef,
-	unref,
-} from 'vue';
-import {
-	computed,
-	effectScope,
-	proxyRefs,
-	stop,
-	watch,
-} from './vue';
+import {shallowRef} from 'vue';
 
 import createInstance from './createInstance';
 
 export default function(options) {
 	let optionsRef = shallowRef(options);
-	let that = ((...args) => createInstance(that, ...args));
-	Object.defineProperties(that, {
+	let model = ((...args) => createInstance(model, ...args));
+	Object.defineProperties(model, {
 		options: {
 			get() {
 				return optionsRef.value;
@@ -28,5 +17,5 @@ export default function(options) {
 			},
 		},
 	});
-	return that;
+	return model;
 }
