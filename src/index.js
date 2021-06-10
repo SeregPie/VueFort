@@ -1,5 +1,5 @@
-import createInstance from './createInstance';
+import defineModel from './defineModel';
 
 export {
-	createInstance,
+	defineModel,
 };

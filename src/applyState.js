@@ -1,5 +1,3 @@
-// todo: refactor
-
 import {reactive} from 'vue-demi';
 
 import isFunction from './utils/isFunction';
@@ -19,10 +17,6 @@ export default function(target, v) {
 					// warn
 				}
 			}
-		} else
-		if (isObject(v)) {
-			v = reactive(v);
-			applyProxy(target, v);
 		} else {
 			// warn
 		}

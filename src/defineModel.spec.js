@@ -1,16 +1,15 @@
 import {
 	reactive,
-	shallowRef,
+	ref,
 	toRefs,
-	watch,
+	//watch,
 } from 'vue-demi';
-import createInstance from './createInstance';
+import defineModel from './defineModel';
 
-describe('createInstance', () => {
+describe('defineModel', () => {
 	test('basic', () => {
-		let state = reactive({count: 1});
-		let instance = createInstance({
-			state,
+		let createInstance = defineModel({
+			props: ['count'],
 			getters: {
 				countDouble() {
 					return this.count * 2;
@@ -22,6 +21,8 @@ describe('createInstance', () => {
 				},
 			},
 		});
+		let state = reactive({count: 1});
+		let instance = createInstance(state);
 		expect(state.count).toBe(1);
 		expect(instance.count).toBe(1);
 		expect(instance.countDouble).toBe(2);
@@ -38,17 +39,18 @@ describe('createInstance', () => {
 		expect(instance.count).toBe(4);
 		expect(instance.countDouble).toBe(8);
 	});
-	test('destroy instance', () => {
-		let spy = jest.fn();
-		let state = reactive({count: 1});
-		let instance = createInstance({
-			state,
+	/*test('destroy instance', () => {
+		let createInstance = defineModel({
+			props: ['count'],
 			getters: {
 				countDouble() {
 					return this.count * 2;
 				},
 			},
 		});
+		let state = reactive({count: 1});
+		let instance = createInstance(state);
+		let spy = jest.fn();
 		watch(
 			() => instance.countDouble,
 			spy,
@@ -66,21 +68,29 @@ describe('createInstance', () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 	test('destroy nested instances', () => {
-		let root = createInstance({
-			state: {
-				items: [],
+		let createItem = defineModel();
+		let createRoot = defineModel({
+			state() {
+				return {items: []};
 			},
 			methods: {
 				addItem() {
 					let {items} = this;
-					let item = createInstance({
-						bind: this,
+					extendScope(this, () => {
+
 					});
+					let item = createItem();
 					items.push(item);
 					return item;
 				},
+				removeItem(index) {
+					let {items} = this;
+					let [item] = items.splice(index, 1);
+					stop(item);
+				},
 			},
 		});
+		let root = createRoot();
 		let item = root.addItem();
 		item.$destroy();
 		expect(item.$isDestroyed).toBe(true);
@@ -91,7 +101,7 @@ describe('createInstance', () => {
 		root.$destroy();
 		expect(root.$isDestroyed).toBe(true);
 		expect(root.items.every(item => item.$isDestroyed)).toBe(true);
-	});
+	});*/
 	test('props', () => {
 		let model = {
 			props: {
@@ -129,7 +139,7 @@ describe('createInstance', () => {
 				return {state};
 			},
 		};
-		let propsRef = shallowRef();
+		let propsRef = ref();
 		let instance = createInstance(model, propsRef);
 		expect(instance).toHaveProperty('a');
 		expect(instance.a).toBeUndefined();
