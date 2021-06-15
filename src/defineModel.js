@@ -1,21 +1,20 @@
-import {shallowRef} from 'vue';
-
 import createInstance from './createInstance';
+import symbol from './ModelSymbol';
 
-export default function(options) {
-	let optionsRef = shallowRef(options);
-	let model = ((...args) => createInstance(model, ...args));
-	Object.defineProperties(model, {
-		options: {
-			get() {
-				return optionsRef.value;
-			},
-		},
-		update: {
-			value(options) {
-				optionsRef.value = options;
-			},
-		},
+import isFunction from './utils/isFunction';
+import partial from './utils/partial';
+import stubObject from './utils/stubObject';
+
+export default function(fn) {
+	if (isFunction(fn)) {
+		// ok
+	} else {
+		// warn
+		fn = stubObject;
+	}
+	let result = partial(createInstance, fn);
+	Object.defineProperties(result, {
+		[symbol]: {value: true},
 	});
-	return model;
+	return result;
 }
