@@ -7,11 +7,3 @@ export {
 	dummyRef,
 	nested,
 };
-
-export {
-	computed,
-	effectScope,
-	extendScope,
-	watch,
-	watchEffect,
-} from './vue';

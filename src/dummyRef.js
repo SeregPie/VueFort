@@ -9,7 +9,7 @@ export default function(v) {
 	if (isFunction(v)) {
 		get = v;
 		set = (() => {
-			// warn
+			// warn: setter is not defined
 		});
 	} else
 	if (isObject(v)) {
@@ -18,11 +18,11 @@ export default function(v) {
 				if (isFunction(v)) {
 					return v;
 				} else {
-					// warn
+					// warn: getter is not a function
 				}
 			}
 			return (() => {
-				// warn
+				// warn: getter is not defined
 			});
 		})(v.get);
 		set = (v => {
@@ -30,19 +30,19 @@ export default function(v) {
 				if (isFunction(v)) {
 					return v;
 				} else {
-					// warn
+					// warn: setter is not a function
 				}
 			}
 			return (() => {
-				// warn
+				// warn: setter is not defined
 			});
 		})(v.set);
 	} else {
 		get = (() => {
-			// warn
+			// warn: getter is not defined
 		});
 		set = (() => {
-			// warn
+			// warn: setter is not defined
 		});
 	}
 	return customRef(() => ({get, set}));
